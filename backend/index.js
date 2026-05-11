@@ -1,18 +1,29 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import { connectDB } from './config/configDb.js';
+import { PORT } from './config/configEnv.js';
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
-
-const PORT = process.env.PORT || 3000;
+app.use(
+  cors({
+    credentials: true,
+    origin: true,
+  }),
+);
 
 app.get('/', (req, res) => {
   res.send('Backend funcionando :3');
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.log('Error al conectar con la base de datos:', error);
+    process.exit(1);
+  });
