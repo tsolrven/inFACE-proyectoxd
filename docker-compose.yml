@@ -1,0 +1,57 @@
+services:
+  database:
+    image: postgres:17-alpine
+    container_name: inface-db
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_DB: ${DATABASE:-inface_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DATABASE:-inface_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inface-network
+
+  backend:
+    build: ./backend
+    container_name: inface-backend
+    environment:
+      - DB_HOST=database
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres123}
+      - DATABASE=${DATABASE:-inface_db}
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - inface-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build: ./frontend
+    container_name: inface-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - inface-network
+
+networks:
+  inface-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
