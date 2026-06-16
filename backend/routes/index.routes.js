@@ -4,6 +4,7 @@ import apunteRoutes from './apunte.routes.js';
 import archivoRoutes from './archivo.routes.js';
 import votoRoutes from './voto.routes.js';
 import comentarioRoutes from './comentario.routes.js';
+import ramoRoutes from './ramo.routes.js';
 
 function routerApi(app) {
   const router = Router();
@@ -14,6 +15,7 @@ function routerApi(app) {
   router.use('/archivos', archivoRoutes);
   router.use('/votos', votoRoutes);
   router.use('/comentarios', comentarioRoutes);
+  router.use('/ramos', ramoRoutes);
 }
 
 export { routerApi };
