@@ -1,15 +1,22 @@
-'use strict';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
+//* se crea el pool de conexiones
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
 });
 
-export async function connectDB() {
+//* se crea el adapter
+const adapter = new PrismaPg(pool);
+
+//* se crea PrismaClient con el adapter
+const prisma = new PrismaClient({
+  adapter,
+  errorFormat: 'colorless',
+});
+
+async function connectDB() {
   try {
     await prisma.$connect();
     console.log('=> Conexión exitosa a la base de datos PostgreSQL!');
@@ -19,4 +26,4 @@ export async function connectDB() {
   }
 }
 
-export default prisma;
+export { prisma, connectDB };

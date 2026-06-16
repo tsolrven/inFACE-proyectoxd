@@ -17,13 +17,8 @@ app.get('/', (req, res) => {
   res.send('Backend funcionando :3');
 });
 
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Servidor corriendo en http://localhost:${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.log('Error al conectar con la base de datos:', error);
-    process.exit(1);
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
   });
+});
