@@ -14,6 +14,7 @@ async function register(req, res) {
     const usuario = await registrar(req.body);
     res.status(201).json({ ok: true, data: usuario });
   } catch (err) {
+    console.error(err);
     res
       .status(err.status || 500)
       .json({ ok: false, mensaje: err.mensaje || 'Error interno' });

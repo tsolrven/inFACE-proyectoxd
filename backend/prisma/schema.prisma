@@ -74,7 +74,7 @@ model Etiqueta {
   id                    Int      @id @default(autoincrement())
   tipo_etiqueta_id      Int
   creada_por_usuario_id String?
-  nombre_etiqueta       String   @db.VarChar(100)
+  nombre_etiqueta       String   @unique @db.VarChar(100)
   nombre_normalizado    String   @db.VarChar(100)
   descripcion           String?
   aliases               String?

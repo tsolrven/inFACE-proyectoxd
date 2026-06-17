@@ -6,7 +6,7 @@ import {
   verificarRefreshToken,
 } from '../helpers/jwt.helper.js';
 
-async function registrar({ correo, contrasena, nombre_usuario, rol }) {
+async function registrar({ correo, contrasena, nombre_usuario, rol, campus}) {
   const usuarioExiste = await prisma.usuario.findUnique({ where: { correo } });
   if (usuarioExiste)
     throw { status: 400, mensaje: 'El correo ya está registrado' };
@@ -25,7 +25,7 @@ async function registrar({ correo, contrasena, nombre_usuario, rol }) {
       contrasena: hash,
       rol: rol || 'estudiante',
       perfil: {
-        create: { nombre_usuario },
+        create: { nombre_usuario, campus },
       },
     },
     include: { perfil: true },

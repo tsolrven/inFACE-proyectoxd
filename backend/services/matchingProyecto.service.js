@@ -110,6 +110,11 @@ async function eliminarProyecto(id, usuario_id, rol) {
     if (proyecto.creador_id !== usuario_id && rol !== 'superadmin')
         throw { status: 403, mensaje: 'No tienes permiso para eliminar este proyecto' };
 
+    await prisma.proyectoEtiqueta.deleteMany({ where: { proyecto_id: id } });
+    await prisma.postulacionProyecto.deleteMany({ where: { proyecto_id: id } });
+    await prisma.integranteProyecto.deleteMany({ where: { proyecto_id: id } });
+    await prisma.favoritoProyecto.deleteMany({ where: { proyecto_id: id } });
+    
     await prisma.proyecto.delete({ where: { id } });
 
     return { mensaje: 'Proyecto eliminado correctamente' };

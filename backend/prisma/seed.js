@@ -1,7 +1,17 @@
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+require('dotenv').config({ path: new URL('../.env', import.meta.url).pathname });
+
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const pool = new Pool({
+  connectionString: 'postgresql://postgres:1421estrellas@localhost:5432/inface_bd',
+});
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 //* CARRERAS ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 const carreras = [
@@ -182,6 +192,18 @@ const ramos = {
   ],
 };
 
+//* ETIQUETAS ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+const etiquetas = [
+  { nombre_etiqueta: 'Frontend' },
+  { nombre_etiqueta: 'Backend' },
+  { nombre_etiqueta: 'Base de Datos' },
+  { nombre_etiqueta: 'Inteligencia Artificial' },
+  { nombre_etiqueta: 'Diseño UX/UI' },
+  { nombre_etiqueta: 'Mobile' },
+  { nombre_etiqueta: 'DevOps' },
+  { nombre_etiqueta: 'Derecho Digital' },
+];
+
 //* USUARIOS ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 const usuarios = [
   {
@@ -190,6 +212,7 @@ const usuarios = [
     rol: 'superadmin',
     nombre_usuario: 'superadmin',
     carrera: null,
+    campus: 'Concepción',
   },
   {
     correo: 'estudiante_ieci@inface.cl',
@@ -197,6 +220,7 @@ const usuarios = [
     rol: 'estudiante',
     nombre_usuario: 'est_ieci',
     carrera: 'IECI',
+    campus: 'Concepción',
   },
   {
     correo: 'estudiante_ici@inface.cl',
@@ -204,6 +228,7 @@ const usuarios = [
     rol: 'estudiante',
     nombre_usuario: 'est_ici',
     carrera: 'ICI',
+    campus: 'Chillán',
   },
   {
     correo: 'estudiante_der@inface.cl',
@@ -211,6 +236,7 @@ const usuarios = [
     rol: 'estudiante',
     nombre_usuario: 'est_der',
     carrera: 'DER',
+    campus: "Concepción",
   },
   {
     correo: 'tutor@inface.cl',
@@ -218,6 +244,7 @@ const usuarios = [
     rol: 'tutor',
     nombre_usuario: 'tutor_test',
     carrera: 'IECI',
+    campus: 'Concepción',
   },
 ];
 
@@ -273,7 +300,7 @@ async function main() {
         correo: u.correo,
         contrasena: hash,
         rol: u.rol,
-        perfil: { create: { nombre_usuario: u.nombre_usuario } },
+        perfil: { create: { nombre_usuario: u.nombre_usuario, campus: u.campus } },
       },
       include: { perfil: true },
     });
@@ -295,6 +322,110 @@ async function main() {
     }
 
     console.log(`Usuario: ${u.correo} (${u.rol})`);
+  }
+
+  //* Tipo de etiqueta base
+  const tipoEtiqueta = await prisma.tipoEtiqueta.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { nombre_tipo_etiqueta: 'Tecnología' },
+  });
+
+  //* Etiquetas
+  const etiquetasCreadas = {};
+  for (const e of etiquetas) {
+    const etiqueta = await prisma.etiqueta.upsert({
+      where: { nombre_etiqueta: e.nombre_etiqueta },
+      update: {},
+      create: {
+        nombre_etiqueta: e.nombre_etiqueta,
+        nombre_normalizado: e.nombre_etiqueta.toLowerCase().replace(/\s+/g, '-').replace(/\//g, '-'),
+        tipo_etiqueta_id: tipoEtiqueta.id,
+        es_predeterminada: true,
+        estado: 'aprobada',
+      },
+    });
+    etiquetasCreadas[e.nombre_etiqueta] = etiqueta;
+  }
+  console.log(`Etiquetas: ${Object.keys(etiquetasCreadas).length} creadas`);
+
+  //* Proyectos
+  const usuarioIECI = await prisma.usuario.findUnique({ where: { correo: 'estudiante_ieci@inface.cl' } });
+  const usuarioICI = await prisma.usuario.findUnique({ where: { correo: 'estudiante_ici@inface.cl' } });
+  const usuarioDER = await prisma.usuario.findUnique({ where: { correo: 'estudiante_der@inface.cl' } });
+  const usuarioTutor = await prisma.usuario.findUnique({ where: { correo: 'tutor@inface.cl' } });
+
+  const proyectos = [
+    {
+      creador_id: usuarioIECI.id,
+      titulo_proyecto: 'Plataforma de aprendizaje colaborativo',
+      descripcion_proyecto: 'Desarrollo de una plataforma web para que estudiantes compartan recursos y apuntes de forma organizada.',
+      modalidad_proyecto: 'remoto',
+      maximo_integrantes: 4,
+      estado_proyecto: 'abierto',
+      fecha_inicio: new Date('2026-07-01'),
+      fecha_fin: new Date('2026-12-01'),
+      etiquetas: ['Frontend', 'Backend', 'Base de Datos'],
+    },
+    {
+      creador_id: usuarioICI.id,
+      titulo_proyecto: 'Sistema de detección de plagio con IA',
+      descripcion_proyecto: 'Herramienta que usa NLP para detectar similitudes en trabajos académicos entregados en la plataforma.',
+      modalidad_proyecto: 'hibrido',
+      maximo_integrantes: 3,
+      estado_proyecto: 'abierto',
+      fecha_inicio: new Date('2026-07-15'),
+      fecha_fin: new Date('2026-11-30'),
+      etiquetas: ['Inteligencia Artificial', 'Backend'],
+    },
+    {
+      creador_id: usuarioTutor.id,
+      titulo_proyecto: 'App mobile de tutorías universitarias',
+      descripcion_proyecto: 'Aplicación móvil para conectar tutores con estudiantes, con agenda, chat y calificaciones.',
+      modalidad_proyecto: 'remoto',
+      maximo_integrantes: 5,
+      estado_proyecto: 'abierto',
+      fecha_inicio: new Date('2026-08-01'),
+      fecha_fin: new Date('2027-01-31'),
+      etiquetas: ['Mobile', 'Backend', 'Diseño UX/UI'],
+    },
+    {
+      creador_id: usuarioDER.id,
+      titulo_proyecto: 'Repositorio de jurisprudencia digital',
+      descripcion_proyecto: 'Sistema para indexar y buscar fallos judiciales, con filtros por materia, tribunal y fecha.',
+      modalidad_proyecto: 'presencial',
+      maximo_integrantes: 3,
+      estado_proyecto: 'en_progreso',
+      fecha_inicio: new Date('2026-06-01'),
+      fecha_fin: new Date('2026-10-01'),
+      etiquetas: ['Derecho Digital', 'Base de Datos', 'Frontend'],
+    },
+    {
+      creador_id: usuarioIECI.id,
+      titulo_proyecto: 'Dashboard de métricas académicas',
+      descripcion_proyecto: 'Panel de control para que docentes visualicen el rendimiento de sus estudiantes en tiempo real.',
+      modalidad_proyecto: 'hibrido',
+      maximo_integrantes: 4,
+      estado_proyecto: 'abierto',
+      fecha_inicio: new Date('2026-07-10'),
+      fecha_fin: new Date('2026-12-15'),
+      etiquetas: ['Frontend', 'Diseño UX/UI', 'Base de Datos'],
+    },
+  ];
+
+  for (const p of proyectos) {
+    const { etiquetas: etiquetasProyecto, ...datos } = p;
+    await prisma.proyecto.create({
+      data: {
+        ...datos,
+        etiquetas: {
+          create: etiquetasProyecto.map(nombre => ({
+            etiqueta_id: etiquetasCreadas[nombre].id,
+          })),
+        },
+      },
+    });
+    console.log(`Proyecto: ${p.titulo_proyecto}`);
   }
 
   console.log('\nSeed completado.');

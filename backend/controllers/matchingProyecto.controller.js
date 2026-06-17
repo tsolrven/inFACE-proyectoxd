@@ -87,6 +87,7 @@ async function eliminar(req, res) {
         );
         res.json({ ok: true, ...resultado });
     } catch (err) {
+        console.error(err);
         res.status(err.status || 500).json({ ok: false, mensaje: err.mensaje || 'Error interno' });
     }
 }
